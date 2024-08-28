@@ -1,53 +1,41 @@
-name: 'Snyk IaC Test Action' #Executa testes de segurança em Infraestrutura como Código (IaC) usando a ferramenta Snyk.
-description: 'Runs Snyk IaC tests'
-inputs: #Define as entradas necessárias para a ação. Entradas são parâmetros que o usuário deve fornecer quando a ação é executada. Esses parâmetros configuram a ação para que ela funcione corretamente.
+
+name: 'Snyk IaC Test Action'
+inputs: 
   snyk-token:
     description: 'Token to use Snyk'
     required: true
 
-  github-token: #Token exigido para interagir com a API do GitHub e escrever no PR. 
+  github-token: 
     description: 'Github token to comment on PR'
     required: true
 
-  pr-number: #Em um repositório GitHub, cada Pull Request tem um número único que o identifica. Este número é essencial para que a ação saiba em qual PR deve atuar. Por exemplo, se a ação precisa adicionar um comentário a um PR, fazer uma verificação de status, ou realizar qualquer outra operação específica em um PR, ela precisa saber qual PR está sendo referenciado — e isso é feito usando o pr-number.
+  pr-number: 
     description: 'The number of the pull request'
     required: true
 
-  snyk-severity: #Este é o nome do input. O nome snyk-severity sugere que essa entrada será usada para capturar o nível de severidade das vulnerabilidades que devem ser consideradas durante a análise de segurança com a ferramenta Snyk.
+  snyk-severity: 
     description: 'The snky-severity'
     required: false
     default: 'high'
 
 runs:
-  using: 'composite' # Especifica que esta ação é uma ação composta. Isso significa que a ação é composta por uma série de etapas (steps), que são executadas em sequência. Uma ação composta permite agrupar várias etapas que normalmente seriam definidas diretamente em um workflow (.yml), possibilitando a reutilização dessas etapas em diferentes workflows.
+  using: 'composite' 
   steps:
     - name: Checkout code
-      uses: actions/checkout@v4 #No caso, está usando a ação oficial actions/checkout na versão v4. Esta ação é amplamente usada em workflows do GitHub Actions e tem a função de baixar o código do repositório GitHub para que ele possa ser utilizado nas etapas subsequentes.
+      uses: actions/checkout@v4 
 
     - name: 'Check for .tf files'
-      id: check_tf_files #pode ser usado para referenciar a saída desta etapa em outras partes do workflow.
+      id: check_tf_files 
       shell: bash
-      run: | #run: |: Inicia um bloco de comandos que será executado no shell bash.
+      run: |
 
-#Este bloco de comando lista todos os arquivos que correspondem ao padrão *.tf que estão rastreados pelo Git no repositório. Ou seja, ele verifica se há arquivos com a extensão .tf sob controle de versão.
-# | grep -q .: Esse comando canaliza (|) a saída de git ls-files para o comando grep. O grep -q . verifica se há qualquer saída do comando anterior (ou seja, se algum arquivo .tf foi encontrado). O -q faz com que o grep funcione em modo silencioso, retornando apenas o status de sucesso ou falha.
-# if ...; then: Se git ls-files encontrar arquivos .tf, a condição do if será verdadeira.
-# echo "TERRAFORM_FILES_FOUND=true" >> $GITHUB_ENV:
-# Se a condição do if for verdadeira (ou seja, se houver arquivos .tf no repositório), este comando define uma variável de ambiente TERRAFORM_FILES_FOUND como true.
-# >> $GITHUB_ENV: Escreve essa variável no arquivo de ambiente do GitHub Actions ($GITHUB_ENV), tornando-a disponível para etapas subsequentes no workflow.
-# else:
-
-# Define o que acontecerá se a condição do if for falsa (ou seja, se não houver arquivos .tf).
-# echo "TERRAFORM_FILES_FOUND=false" >> $GITHUB_ENV:
-
-# Se a condição do if for falsa, este comando define a variável de ambiente TERRAFORM_FILES_FOUND como false.
         if git ls-files '*.tf' | grep -q .; then
           echo "TERRAFORM_FILES_FOUND=true" >> $GITHUB_ENV
         else
           echo "TERRAFORM_FILES_FOUND=false" >> $GITHUB_ENV
         fi
 
-    - name: Get .snyk file #Este trecho de código é uma etapa de uma GitHub Action que tenta obter um arquivo .snyk de um bucket S3 da Amazon Web Services (AWS). O arquivo .snyk geralmente é usado para definir políticas de ignorância para a ferramenta Snyk, que realiza análises de segurança em projetos.
+    - name: Get .snyk file
       continue-on-error: true
       shell: bash
       run: |
@@ -60,27 +48,27 @@ runs:
         fi
 
     - name: Set up Python
-      uses: actions/setup-python@v4 #Especifica que a etapa usará uma ação pré-definida disponível no GitHub Actions Marketplace. A ação actions/setup-python@v4 é uma ação oficial do GitHub que configura o ambiente Python na versão especificada para ser usada no workflow.
+      uses: actions/setup-python@v4 
       if: ${{ env.TERRAFORM_FILES_FOUND == 'true' }}
       with:
         python-version: '3.x'
 
     - name: 'Set up Node.js' 
-      if: ${{ env.TERRAFORM_FILES_FOUND == 'true' }} # Verifica se encontra arquivos terraform. 
-      uses: actions/setup-node@v4 #configura o ambiente Node.js com a action oficial do github na versão4.
+      if: ${{ env.TERRAFORM_FILES_FOUND == 'true' }} 
+      uses: actions/setup-node@v4 
       with:
         node-version: '22.4.1'
 
     - name: Install Snyk CLI
       if: ${{ env.TERRAFORM_FILES_FOUND == 'true' }}
       shell: bash
-      run: npm install -g snyk #Instala o Snyk CLI via NPM.
+      run: npm install -g snyk 
 
     - name: 'Authenticate Snyk CLI'
       if: ${{ env.TERRAFORM_FILES_FOUND == 'true' }}
       shell: bash
       env:
-        SNYK_TOKEN: ${{inputs.snyk-token}} #Define a variável de ambiente SNYK_TOKEN com o valor fornecido pelo input snyk-token. Esse token é essencial para autenticar o Snyk CLI.
+        SNYK_TOKEN: ${{inputs.snyk-token}} 
       run: snyk auth $SNYK_TOKEN
 
     - name: Run severity level script
