@@ -1,34 +1,33 @@
-
 name: 'Snyk IaC Test Action'
-inputs: 
+description: 'Runs Snyk IaC tests'
+inputs:
   snyk-token:
     description: 'Token to use Snyk'
     required: true
-
-  github-token: 
+  
+  github-token:
     description: 'Github token to comment on PR'
     required: true
 
-  pr-number: 
+  pr-number:
     description: 'The number of the pull request'
     required: true
-
-  snyk-severity: 
+  
+  snyk-severity:
     description: 'The snky-severity'
     required: false
     default: 'high'
 
 runs:
-  using: 'composite' 
+  using: 'composite'
   steps:
     - name: Checkout code
-      uses: actions/checkout@v4 
+      uses: actions/checkout@v4
 
     - name: 'Check for .tf files'
-      id: check_tf_files 
+      id: check_tf_files
       shell: bash
       run: |
-
         if git ls-files '*.tf' | grep -q .; then
           echo "TERRAFORM_FILES_FOUND=true" >> $GITHUB_ENV
         else
@@ -48,27 +47,27 @@ runs:
         fi
 
     - name: Set up Python
-      uses: actions/setup-python@v4 
+      uses: actions/setup-python@v4
       if: ${{ env.TERRAFORM_FILES_FOUND == 'true' }}
       with:
         python-version: '3.x'
 
-    - name: 'Set up Node.js' 
-      if: ${{ env.TERRAFORM_FILES_FOUND == 'true' }} 
-      uses: actions/setup-node@v4 
+    - name: 'Set up Node.js'
+      if: ${{ env.TERRAFORM_FILES_FOUND == 'true' }}
+      uses: actions/setup-node@v4
       with:
         node-version: '22.4.1'
 
     - name: Install Snyk CLI
       if: ${{ env.TERRAFORM_FILES_FOUND == 'true' }}
       shell: bash
-      run: npm install -g snyk 
+      run: npm install -g snyk
 
     - name: 'Authenticate Snyk CLI'
       if: ${{ env.TERRAFORM_FILES_FOUND == 'true' }}
       shell: bash
       env:
-        SNYK_TOKEN: ${{inputs.snyk-token}} 
+        SNYK_TOKEN: ${{inputs.snyk-token}}
       run: snyk auth $SNYK_TOKEN
 
     - name: Run severity level script
