@@ -1,8 +1,5 @@
 name: release-please
-on:
-  push:
-    branches:
-      - main
+on: [push]
 
 env:
   RELEASE_NAME: gh-actions-and-workflows
