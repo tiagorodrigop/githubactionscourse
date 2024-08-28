@@ -6,7 +6,7 @@ on:
         - synchronize
       branches:
         - main
-  
+
   name: Validate PR Title
   
   jobs:
