@@ -7,13 +7,13 @@ on:
       branches:
         - main
 
-  name: Validate PR Title
-  
-  jobs:
+name: Validate PR Title
+
+jobs:
     main:
-      name: Validate PR Title
-      runs-on: ubuntu-22.04
-      steps:
+       name: Validate PR Title
+       runs-on: ubuntu-22.04
+       steps:
         - uses: amannn/action-semantic-pull-request@v5.2.0
           env:
             GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
